@@ -1,12 +1,12 @@
-;Programme qui crÃ©e une liste chainÃ©e de valeurs entrÃ©es et qui les affiche comme des evenements continus.
+;Programme qui cree une liste chainee de valeurs entree et qui les affiche comme des evenements continus.
 ;
-;But: Concevoir un programme qui gÃ¨re un agenda hebdomadaire des Ã©vÃ©nements.
-;Les événements seront insérés au fur et à mesure dans la liste doublement chaînée selon l'ordre chronologique.
+;But: Concevoir un programme qui gere un agenda hebdomadaire des evenements.
+;Les evenements seront inseres au fur et �  mesure dans la liste doublement chainee selon l'ordre chronologique.
 ;
 ;Date: 08 decembre 2021
 ;
 
-main:    LDA     0,i         ;---------- 1.main() Initialiser les registres A et X Ã  0
+main:    LDA     0,i         ;---------- 1.main() Initialiser les registres A et X a  0
          LDX     0,i
          STA     compt,d     ; 
          BR      choix       ; Brancher vers l'affichage du menu choix
@@ -83,9 +83,9 @@ fois1:   CALL    affInt      ;
          CALL    affhDure    ;        
          STOP 
 
-affInt:  LDX     jour,i      ;on charge le dÃ©calage vers jours
+affInt:  LDX     jour,i      ;on charge le decalage vers jours
          LDA     6,sxf       ;charger la valeur du jours dans A
-         CPA     1,i         ;Aficher le jour correspondant Ã  son rang dans la semaine
+         CPA     1,i         ;Afficher le jour correspondant a  son rang dans la semaine
          BRNE    mardiAff
          STRO    lundi,d
          BR      finn
@@ -114,14 +114,14 @@ finn:    RET0
 
 
 ;**************************************************************
-;Methodes qui affichent les heures dÃ©but (affhDebut)
-;Ainsi que la durÃ©e (affHduree) 
+;Methodes qui affichent les heures debut (affhDebut)
+;Ainsi que la duree (affHduree) 
 ;tout en convertissant les minutes ==> heures et min (boucl)
 ;**************************************************************
 affhDbt: LDA     0,i         
          STA     varTemp,d
          STA     varTemp2,d
-         LDX     hDebut,i    ;charger le declage des heures dÃ©but dans le tas
+         LDX     hDebut,i    ;charger le declage des heures debut dans le tas
          LDA     6,sxf       ;chercher heure Debut dans le tas , dans A
          BR      boucl
 
@@ -302,8 +302,8 @@ saisie:  STRO    msgJour,d   ; affichage du messsage saisie jours
 
 ;*****************************************
 ;Fonction qui nous permet d'avoir le head 
-;de la liste des tas (parceque si on insÃ©re 
-;un autre Ã©venement on perd cette adresse)
+;de la liste des tas (parceque si on insere 
+;un autre evenement on perd cette adresse)
 ;*****************************************
 alloc:   LDA     hpPtr,d     ;Creation du tas
          STA     head,d      ;Stocker l'adresse de ma liste des tas dans la variable head
@@ -322,16 +322,16 @@ saut:    ADDA    1,i
          STA     compt,d     ;
          LDA     0,i         ;
          LDA     jsaisi,d    ; 
-         STA     jour,x      ;initialiser jours Ã  0
+         STA     jour,x      ;initialiser jours a  0
          LDA     0,i
          LDA     hsaisie,d
-         STA     hDebut,x    ;initialiser heure debut Ã  0
+         STA     hDebut,x    ;initialiser heure debut a  0
          LDA     0,i
          LDA     dsaisie,d
-         STA     hDuree,x    ;initialiser duree Ã  0
+         STA     hDuree,x    ;initialiser duree a  0
          LDA     0,i
-         STA     previous,x  ;initialiser  previous Ã  0       
-         STA     Next,x      ;initialiser Next Ã  0
+         STA     previous,x  ;initialiser  previous a  0       
+         STA     Next,x      ;initialiser Next a  0
          LDA     calender,d  ;
          LDX     headList,d  ;   
          RET0                 
@@ -357,11 +357,11 @@ msgAgend:.ASCII  "******************\n*     Agenda   "
          .ASCII  "  *\n******************\n\x00"
 msgfin:  .ASCII  "\n\nFin normale du programme.\x00"
 msgChoix:.ASCII  "Votre choix : \x00"
-msgJour: .ASCII "ÃvÃ©nement\nJour : \x00"
-msgDebut:.ASCII"Heure de dÃ©but : \x00"
-msgDuree:.ASCII"DurÃ©e : \x00"
+msgJour: .ASCII  "Evenement\nJour : \x00"
+msgDebut:.ASCII  "Heure de debut : \x00"
+msgDuree:.ASCII  "Duree : \x00"
 strEMsg: .ASCII  "Erreur de format\n\x00"
-strEMsg2:.ASCII  "Planification de l'Ã©vÃ©nement entrÃ© impossible\n\x00"
+strEMsg2:.ASCII  "Planification de l'evenement entree impossible\n\x00"
 lundi:   .ASCII  "Lundi\x00"
 mardi:   .ASCII  "Mardi\x00"
 mercredi:.ASCII  "Mercredi\x00"
