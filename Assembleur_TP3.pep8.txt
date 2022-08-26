@@ -1,0 +1,399 @@
+;Programme qui crÃ©e une liste chainÃ©e de valeurs entrÃ©es et qui les affiche comme des evenements continus.
+;
+;But: Concevoir un programme qui gÃ¨re un agenda hebdomadaire des Ã©vÃ©nements.
+;Les événements seront insérés au fur et à mesure dans la liste doublement chaînée selon l'ordre chronologique.
+;
+;Date: 08 decembre 2021
+;
+
+main:    LDA     0,i         ;---------- 1.main() Initialiser les registres A et X Ã  0
+         LDX     0,i
+         STA     compt,d     ; 
+         BR      choix       ; Brancher vers l'affichage du menu choix
+options: CPA     1,i         ;tant que l'utilisateur saisi un 1 on ajoute les dates des evenement
+         BREQ    cCreer
+         CPA     2,i         ;Si l'utilisateur saisi 2 on quitte le programme et on affiche l'agenda des evenements
+         BREQ    cAffich
+         BR      choix
+cCreer:  CALL    agenda      ;---------- 2.agenda()  
+      
+cAffich: CALL    affAgd      ;---------- 3.affAgd(Event* Head)       
+         STOP 
+choix:   STRO    msgBienv,d  ; methode pour creer le choix du menu
+         CHARO   '\n',i      
+         STRO    msgChoix,d 
+         DECI    saisi,d 
+         LDA     saisi,d
+         STA     saisiCh,d
+         BR      options     
+
+saisi:   .BLOCK  2           ;Saisie de choix
+saisiCh: .BLOCK 2            ;variable ou on stoque la saisie du choix de menu
+
+agenda:  ADDSP   2,i         ; #ret 
+         CALL    creer       ; 5 DONNEES PAR MAILLON (3 INTS : JOUR, HEURE, DUREE -- ET 2 CASES (PILE PRECEDENTE ET SUIVANTE))
+         STA     courant,d   ; Sauvegarder l'adresse du maillon courant dans la variable courant
+         STX     testa,d     ; Sauvegarder adresse du Head dans la variable testa
+         LDA     compt,d     ; 
+         CPA     1,i         ;
+         BRGT    jump        ;      
+         SUBSP   6,i         ; creation de la pile contenant #boolRet #headTas #headCou (une seule fois)       
+jump:    LDA     courant,d   ;
+         LDX     testa,d     ;
+         STX     headTas,s   ; stocker le head de toute la liste des events   l'indice 4 dans la pile  
+         STA     0,s         ; stocker le head de l'event   l'indice 2 de la pile
+         CALL    inserer     ; insere le prochain maillon (pile) retourne boolean 1 ou 0 pour afficher l'erreur (si 0)
+         LDA     4,s
+         CPA     0,i
+         BREQ    erComp2     ; l'insertion n'a pas pu etre faite par souci d'incompatibilite
+         BR      choix
+erComp2: STRO    strEMsg2,d
+         BR      choix
+
+;****************************************
+;Methode qui transforme les 3 valeurs int 
+;dans les piles en: jours int en String,
+;et les minutes en heures
+;****************************************
+affAgd:  LDA     0,i         ;
+         LDA     compt,d     ;
+         CPA     0,i         ;S'il n'y a pas de maillon (evenements)
+         BREQ    final       ;je branche vers STOP
+         STRO    msgAgend,d  ;
+         CPA     1,i         ;S'il y a un maillon (un seul evenement)
+         BREQ    fois1       ;j'affiche une seule fois
+affLoop: LDX     Next,i      ;Affiche evenement 
+         LDA     4,sxf       ;checher le contenu du Next dans le tas  
+         CPA     0,i         
+         BREQ    finAff      ;Si y a pas de Next on affiche une derniere fois
+         CALL    affInt      ;Afficher les jours
+         CALL    affhDbt     ;Afficher l'heure debut
+         CALL    affhDure    ;Afficher la duree
+         STRO    espaces2,d  ;
+         LDX     Next,i      ;
+         LDA     4,sxf       ;Cherche le prochain maillon
+         STA     4,s         ;Le stocker dans la pile
+         BR      affLoop     ;Afficher le prochain maillon
+finAff:  CALL    affInt      ;
+         CALL    affhDbt     ;
+         CALL    affhDure    ;
+final:   STOP    
+fois1:   CALL    affInt      ;
+         CALL    affhDbt     ;
+         CALL    affhDure    ;        
+         STOP 
+
+affInt:  LDX     jour,i      ;on charge le dÃ©calage vers jours
+         LDA     6,sxf       ;charger la valeur du jours dans A
+         CPA     1,i         ;Aficher le jour correspondant Ã  son rang dans la semaine
+         BRNE    mardiAff
+         STRO    lundi,d
+         BR      finn
+mardiAff:CPA     2,i
+         BRNE    mercrAff
+         STRO    mardi,d
+         BR      finn
+mercrAff:CPA     3,i
+         BRNE    jeudiAff
+         STRO    mercredi,d
+         BR      finn
+jeudiAff:CPA     4,i
+         BRNE    vendrAff
+         STRO    jeudi,d
+         BR      finn
+vendrAff:CPA     5,i
+         BRNE    samedAff
+         STRO    vendredi,d
+         BR      finn
+samedAff:CPA     6,i
+         BRNE    dimanAff
+         STRO    samedi,d
+         BR      finn
+dimanAff:STRO    dimanche,d
+finn:    RET0                
+
+
+;**************************************************************
+;Methodes qui affichent les heures dÃ©but (affhDebut)
+;Ainsi que la durÃ©e (affHduree) 
+;tout en convertissant les minutes ==> heures et min (boucl)
+;**************************************************************
+affhDbt: LDA     0,i         
+         STA     varTemp,d
+         STA     varTemp2,d
+         LDX     hDebut,i    ;charger le declage des heures dÃ©but dans le tas
+         LDA     6,sxf       ;chercher heure Debut dans le tas , dans A
+         BR      boucl
+
+affhDure:CHARO   ' ',i
+         LDA     0,i
+         STA     varTemp,d
+         STA     varTemp2,d
+         LDX     hDuree,i    ;charger le decalage des durees dans le tas
+         LDA     6,sxf       ;charger La duree dans le tas dan A
+         BR      boucl
+
+;*****************************************
+;Boucle qui fait la division 
+;manuellement en uilisant la soustraction
+;*****************************************
+
+boucl:   LDX     0,i         ;While (a > 60)
+         CPA     60,i
+         BRLT    fina        ;if (a <60)
+         SUBA    60,i        
+         LDX     varTemp,d
+         ADDX    1,i
+         STX     varTemp,d   ;chaque itÃ©ration Ã©quivaut Ã  1 heure
+         BR      boucl
+
+fina:    STA     varTemp2,d  ;Afficher les variables heures 
+         CHARO   ' ',i
+         DECO    varTemp,d
+         CHARO   'h',i
+         DECO    varTemp2,d 
+         RET0 
+              
+headTas: .EQUATE 2           ; #2h le head de l'event avec l'indice 2 de la pile
+headCou: .EQUATE 4           ; #2h le head de toute la liste des events
+boolRet: .EQUATE 0           ; #2d 1 si true 0 si false
+
+inserer: CPA     4,s         ; headTas   ----------- bool inserer(Event* ev, Event& head)
+         BREQ    retok
+
+compare: LDX     jour,i      ; Comparaison des JOURS ------------
+         LDA     4,sxf
+         STA     jourTas,d
+         LDA     2,sxf       ; headcou
+         STA     jourCou,d
+         CPA     jourTas,d
+         BRNE    linkage 
+
+         LDX     hDebut,i    ; Comparaison des heures --------------
+         LDA     4,sxf
+         STA     hDebutTa,d  ; heure de debut du tas
+         LDA     2,sxf
+         STA     hdebutCo,d  ; heure de debut courante
+
+         LDX     hDuree,i               
+         LDA     2,sxf
+         ADDA    hdebutCo,d
+         STA     hDurFinC,d  ; heure de fin courante
+         LDA     4,sxf
+         ADDA    hDebutTa,d
+         STA     hDurFinT,d  ; heure de fin du tas
+
+         LDA     hDurFinC,d
+         CPA     hDebutTa,d  
+         BRLE    avant       ; si fin courante avant le debut du tas : evenement compatible
+         LDA     hDurFinT,d
+         CPA     hdebutCo,d  
+         BRLE    suivant     ; si fin du tas avant le debut : evenement compatible
+         BR      erComp      ; sinon les evenements se chevauchent
+
+suivant: LDX     Next,i      ; on passe a l'element suivant de la liste chainee 
+         LDA     4,sxf        
+         CPA     0,i
+         BREQ    last_e      ; si il n'y a pas d'element suivant, le nouvel evenement sera le dernier
+         STA     4,s   
+         BR      compare
+
+last_e:  LDA     2,s         ; Charger dans Next de tas l'adresse du prochain (courant)
+         LDX     Next,i      
+         STA     4,sxf
+
+         LDA     4,s         ; Charger dans previous de Courant l'adresse du precedent
+         LDX     previous,i 
+         STA     2,sxf 
+
+         BR      retok
+
+avant:   LDA     4,s         ; Charger dans Next de courant l'adresse du prochain (tas)
+         LDX     Next,i 
+         STA     2,sxf       ; nouveau.next = element_suivant
+
+         LDA     4,s        
+         ADDA    previous,i 
+         STA     pntPrV,d    ; sauvegarde la valeur de l'ancien precedent    
+         LDA     pntPrV,n
+         STA     pntPrV,d
+
+         LDA     2,s         ; Charger dans previous de Tas l'adresse du precedent (courant)
+         LDX     previous,i   
+         STA     4,sxf       ; tas.previous = nouveau
+
+         LDA     pntPrV,d
+         CPA     0,i         ; On regarde si courant devient la nouvelle tete de liste
+         BREQ    new_head
+
+         LDA     pntPrV,d    ; Charger dans previous de courant l'adresse du precedent
+         STA     4,s
+         LDX     previous,i 
+         STA     2,sxf       ; nouveau.precedent = element_precedent
+
+         LDA     2,s         ; Charger dans Next du precedent de courant l'adresse du prochain (courant)
+         LDX     Next,i
+         STA     4,sxf       ; element_precent.Next = nouveau
+
+         BR      retok
+
+         
+new_head:LDA     2,s
+         STA     headList,d  ; courant nouvelle head : on modifie headList
+         STA     4,s
+         LDA     1,i
+         STA     6,s
+         RET0   
+    
+linkage: LDA     jourTas,d   ; comparaison des jours
+         CPA     jourCou,d
+         BRGT    avant
+         CPA     jourCou,d
+         BRLT    suivant 
+         STOP
+
+retok:   LDA     headList,d
+         STA     4,s
+         LDA     1,i         ; on retourne 1 pour dire que c'est ok
+         STA     6,s
+         RET0
+
+erComp:  LDA     0,i         ; on retourne 0 pour dire qu'il y a une erreur
+         STA     6,s    
+         RET0
+
+jourTas: .BLOCK  2           ; #2h jours du premier evenement
+jourCou: .BLOCK  2           ; #2h jours du maillon courant
+pntPrV:  .BLOCK  2           ; #2h adresse du maillon precedent 
+hDebutTa:.BLOCK  2           ; #2h heure debut du premier evenement
+hdebutCo:.BLOCK  2           ; #2h heure debut du maillon courant
+hDurFinT:.BLOCK  2           ; #2h addition de heures debut et heure duree du premier tas 
+hDurFinC:.BLOCK  2           ; #2h addition de heures debut et heure duree du tas courant    
+        
+
+creer:   LDA     0,i         ; Event* creer()
+         LDX     0,i
+
+saisie:  STRO    msgJour,d   ; affichage du messsage saisie jours
+         DECI    jsaisi,d    ; saisie jours
+         LDA     jsaisi,d    ;
+         CPA     1,i         ; if (jours < 1 || jours > 7)
+         BRLT    erFormat    ;
+         CPA     7,i         ;
+         BRGT    erFormat    ;
+
+         STRO    msgDebut,d  ; saisie des heuresDebut 
+         DECI    hsaisie,d   ; saisie heure debut
+         LDA     hsaisie,d   ;
+         CPA     0,i         ;if(hDebut < 0 || hDebut > 1440)
+         BRLT    erFormat    ;
+         CPA     1440,i      ;
+         BRGT    erFormat    ;
+
+         STRO    msgDuree,d  ; saisie des heuresDuree
+         DECI    dsaisie,d   ;
+         LDA     dsaisie,d   ;
+         CPA     0,i         ; if(hDuree < 0 || hDuree > 1440)
+         BRLT    erFormat    ;
+         CPA     1440,i      ;
+         BRGT    erFormat    ;
+      
+
+
+;*****************************************
+;Fonction qui nous permet d'avoir le head 
+;de la liste des tas (parceque si on insÃ©re 
+;un autre Ã©venement on perd cette adresse)
+;*****************************************
+alloc:   LDA     hpPtr,d     ;Creation du tas
+         STA     head,d      ;Stocker l'adresse de ma liste des tas dans la variable head
+         LDA     lenStruc,i  ; EQUATE 10 -------------
+         CALL    new         ; produitC = malloc(6) #jour #hDebut #hDuree 
+         LDA     compt,d     ;
+         CPA     0,i         ; if(compt == 0)
+         BRGT    saut        ;
+         STX     headList,d  ;sauvegarder l'adresse du debut du tas dans la variable headList
+
+;**********************************************
+;Creation de la structure de notre calendrier
+;**********************************************        
+saut:    ADDA    1,i
+         STX     calender,d  ;Sauvegarder le head dans calender
+         STA     compt,d     ;
+         LDA     0,i         ;
+         LDA     jsaisi,d    ; 
+         STA     jour,x      ;initialiser jours Ã  0
+         LDA     0,i
+         LDA     hsaisie,d
+         STA     hDebut,x    ;initialiser heure debut Ã  0
+         LDA     0,i
+         LDA     dsaisie,d
+         STA     hDuree,x    ;initialiser duree Ã  0
+         LDA     0,i
+         STA     previous,x  ;initialiser  previous Ã  0       
+         STA     Next,x      ;initialiser Next Ã  0
+         LDA     calender,d  ;
+         LDX     headList,d  ;   
+         RET0                 
+
+compt:   .BLOCK  2           ;compter le nombre de maillon
+head:    .BLOCK  2           ; #2h tete de liste 
+jsaisi:  .BLOCK  2           ; le contenu dans jours
+hsaisie: .BLOCK  2           ; Le contenu das heure saisie
+dsaisie: .BLOCK  2           ; Le contenu dans duree 
+
+erFormat:STRO    strEMsg,d   ;afficher message d'erreur qui indique que le format est invalide
+         BR      choix       ; brancher vers choix du menu 
+         STOP            
+
+
+
+
+; variables --------------------------------------------------------
+
+msgBienv:.ASCII  "******************\n*   [1]-Saisir   *\n*   "
+         .ASCII  "[2]-Quitter  *\n******************\x00"
+msgAgend:.ASCII  "******************\n*     Agenda   "
+         .ASCII  "  *\n******************\n\x00"
+msgfin:  .ASCII  "\n\nFin normale du programme.\x00"
+msgChoix:.ASCII  "Votre choix : \x00"
+msgJour: .ASCII "ÃvÃ©nement\nJour : \x00"
+msgDebut:.ASCII"Heure de dÃ©but : \x00"
+msgDuree:.ASCII"DurÃ©e : \x00"
+strEMsg: .ASCII  "Erreur de format\n\x00"
+strEMsg2:.ASCII  "Planification de l'Ã©vÃ©nement entrÃ© impossible\n\x00"
+lundi:   .ASCII  "Lundi\x00"
+mardi:   .ASCII  "Mardi\x00"
+mercredi:.ASCII  "Mercredi\x00"
+jeudi:   .ASCII  "Jeudi\x00"
+vendredi:.ASCII  "Vendredi\x00"
+samedi:  .ASCII  "Samedi\x00"
+dimanche:.ASCII  "Dimanche\x00"    
+espaces2:.ASCII  "\n\n\x00"  
+
+
+varTemp: .BLOCK  2
+varTemp2:.BLOCK  2
+testa:   .BLOCK  2
+courant: .BLOCK  2
+
+headList:.BLOCK  2           ;#2h Tete de la liste des evenements 
+lenStruc:.EQUATE 10          ;#2d longueur de structure
+calender:.EQUATE 0           ;#2h jour en decimal 
+jour:    .EQUATE 0           ;#2d jour en decimal
+hDebut:  .EQUATE 2           ;#2d heure debut en minutes
+hDuree:  .EQUATE 4           ;#2d heure duree en minutes 
+Next:    .EQUATE 6           ;#2h pointeur vers prochain maillon
+previous:.EQUATE 8           ;#2h pointeur vers maillon precedent
+ret:     .EQUATE 2           ;#2d jour en decimal 
+
+;******* operator new
+;        Precondition: A contains number of bytes
+;        Postcondition: X contains pointer to bytes
+new:     LDX     hpPtr,d     ;returned pointer
+         ADDA    hpPtr,d     ;allocate from heap
+         STA     hpPtr,d     ;update hpPtr
+         RET0                
+hpPtr:   .ADDRSS heap        ;address of next free byte
+heap:    .BLOCK  1           ;first byte in the heap
+         .END  
